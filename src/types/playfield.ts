@@ -2,13 +2,13 @@ import { initialModifiers } from "./modifier";
 import { FieldInfo } from "./gameField";
 
 export const initialPlayField: FieldInfo[][] = (() => {
-  const playfield: FieldInfo[][] = new Array(27);
+  const playfield: FieldInfo[][] = new Array(19);
 
-  for (let i = 0; i < 27; i++) {
+  for (let i = 0; i < 19; i++) {
     playfield[i] = new Array(27);
   }
 
-  for (let row = 0; row < 27; row++) {
+  for (let row = 0; row < 19; row++) {
     for (let col = 0; col < 27; col++) {
       playfield[row][col] = {
         location: {

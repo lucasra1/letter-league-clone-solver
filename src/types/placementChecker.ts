@@ -14,7 +14,29 @@ export interface PlacementOption {
 
 interface PlacementResolution {
   points: number;
+}
+
+interface PartWordPlacementResolution {
+  points: number;
+  sideEffectPoints: number;
   wordmultiplier: number;
+  borderLocation: PlayfieldCoordinate;
+}
+
+interface WordPlacementResolution {
+  points: number;
+  startLocation: PlayfieldCoordinate;
+  endLocation: PlayfieldCoordinate;
+}
+
+interface LetterPlacementResolution {
+  points: number;
+  sideEffectPoints: number;
+  wordmultiplier: number;
+}
+
+interface SideEffectPlacementResolution {
+  points: number;
 }
 
 enum Level {
@@ -81,17 +103,11 @@ function getPlacementOptionFromEnglishWord(
     );
     if (resolutionOfWord) {
       placementOptions.push({
-        points: resolutionOfWord.points * resolutionOfWord.wordmultiplier, // Todo probably not correct, because side effects should'nt be multiplied
+        points: resolutionOfWord.points,
         word: englishWord,
         connectingWord: connectingWord,
-        start: {
-          row: 0, // TODO correct location
-          col: 0,
-        },
-        end: {
-          row: 0,
-          col: 0,
-        },
+        start: resolutionOfWord.startLocation,
+        end: resolutionOfWord.endLocation,
       });
     }
   }
@@ -103,9 +119,9 @@ function wordPlacementResolutionOnPlayfield(
   connectingWord: ConnectingWord,
   wordPlacedBefore: string,
   wordPlacedAfter: string,
-): PlacementResolution | undefined {
-  let beforeWordResolution: PlacementResolution | undefined = undefined;
-  let afterWordResolution: PlacementResolution | undefined = undefined;
+): WordPlacementResolution | undefined {
+  let beforeWordResolution: PartWordPlacementResolution | undefined = undefined;
+  let afterWordResolution: PartWordPlacementResolution | undefined = undefined;
   if (connectingWord.word.length === 1) {
     // Connection Word is single letter
 
@@ -205,10 +221,17 @@ function wordPlacementResolutionOnPlayfield(
     return undefined;
   }
 
+  const sideEffectPoints =
+    beforeWordResolution.sideEffectPoints +
+    afterWordResolution.sideEffectPoints;
+  const sumWordMultiplier =
+    beforeWordResolution.wordmultiplier * afterWordResolution.wordmultiplier;
+  const sumWordPoints =
+    beforeWordResolution.points + afterWordResolution.points;
   return {
-    points: beforeWordResolution.points + afterWordResolution.points,
-    wordmultiplier:
-      beforeWordResolution.wordmultiplier * afterWordResolution.wordmultiplier,
+    points: sumWordPoints * sumWordMultiplier + sideEffectPoints,
+    startLocation: beforeWordResolution.borderLocation,
+    endLocation: afterWordResolution.borderLocation,
   };
 }
 
@@ -217,12 +240,14 @@ function canWordPartBePlacedInDirection(
   wordPart: string,
   locationStart: PlayfieldCoordinate,
   direction: Direction,
-): PlacementResolution | undefined {
+): PartWordPlacementResolution | undefined {
   const lettersOfWord = wordPart.split("");
 
   if (lettersOfWord.length === 0) {
     return {
+      borderLocation: locationStart,
       points: 0,
+      sideEffectPoints: 0,
       wordmultiplier: 1,
     };
   }
@@ -277,7 +302,10 @@ function canWordPartBePlacedInDirection(
   }
 
   return {
+    borderLocation: nextIteration.borderLocation,
     points: nextIteration.points + letterResolution.points,
+    sideEffectPoints:
+      nextIteration.sideEffectPoints + letterResolution.sideEffectPoints,
     wordmultiplier:
       nextIteration.wordmultiplier * letterResolution.wordmultiplier,
   };
@@ -288,7 +316,7 @@ function letterPlacementResolution(
   letter: string,
   location: PlayfieldCoordinate,
   direction: Direction,
-): PlacementResolution | undefined {
+): LetterPlacementResolution | undefined {
   const currentField = getFieldInfoOrUndefined(
     playfield,
     location.row,
@@ -299,7 +327,7 @@ function letterPlacementResolution(
     return undefined;
   }
 
-  let sideEffectResolution: PlacementResolution | undefined;
+  let sideEffectResolution: SideEffectPlacementResolution | undefined;
   if (direction === Direction.UP || direction === Direction.DOWN) {
     // Check left and right
     sideEffectResolution = checkPlacementSideEffectCreatedWords(
@@ -342,7 +370,8 @@ function letterPlacementResolution(
       break;
   }
   return {
-    points: sideEffectResolution.points + letterMultiplier * letterValue,
+    points: letterMultiplier * letterValue,
+    sideEffectPoints: sideEffectResolution.points,
     wordmultiplier,
   };
 }
@@ -352,7 +381,7 @@ function checkPlacementSideEffectCreatedWords(
   letter: string,
   location: PlayfieldCoordinate,
   level: Level,
-): PlacementResolution | undefined {
+): SideEffectPlacementResolution | undefined {
   let precedingField: FieldInfo | undefined;
   let succeedingField: FieldInfo | undefined;
 
@@ -384,7 +413,6 @@ function checkPlacementSideEffectCreatedWords(
     // Preceding and Succeeding is clear of letters
     return {
       points: 0,
-      wordmultiplier: 1,
     };
   }
 
@@ -396,7 +424,7 @@ function sideEffectWordResolution(
   letter: string,
   location: PlayfieldCoordinate,
   level: Level,
-): PlacementResolution | undefined {
+): SideEffectPlacementResolution | undefined {
   let precedingFields: FieldInfo[];
   let succeedingFields: FieldInfo[];
   if (level === Level.HORIZONTAL) {
@@ -444,7 +472,6 @@ function sideEffectWordResolution(
     );
     return {
       points: precedingWordValue + succeedingWordValue,
-      wordmultiplier: 1,
     };
   } else {
     return undefined;
