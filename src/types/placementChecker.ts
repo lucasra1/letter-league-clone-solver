@@ -12,10 +12,6 @@ export interface PlacementOption {
   points: number;
 }
 
-interface PlacementResolution {
-  points: number;
-}
-
 interface PartWordPlacementResolution {
   points: number;
   sideEffectPoints: number;

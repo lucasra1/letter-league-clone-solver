@@ -40,7 +40,7 @@ export function GameField({ fieldInfo }: Props) {
             <ModifierField modifier={fieldInfo.modifier} />
           </div>
         )}
-        {fieldInfo.letter && <LetterStone letter={fieldInfo.letter} />}
+        {fieldInfo.letter && <LetterStone letterInfo={fieldInfo.letter} />}
       </div>
 
       {showPopup && (
