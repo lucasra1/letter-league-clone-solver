@@ -1,26 +1,67 @@
-import React, { useContext } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
+import { FieldInfo } from "./gameField";
+import { initialPlayField } from "./playfield";
+import { letterValues } from "./letter";
 
-// ### Set new Field in playfield
-type PlayFieldSetFieldAtPosFunction = (
-  row: number,
-  col: number,
-  letter: string,
-) => void;
+interface GameSate {
+  playField: FieldInfo[][];
+  availableStones: string[];
+  playFieldSetFieldAtPos: (
+    rowNumber: number,
+    colNumber: number,
+    letter: string,
+  ) => void;
+  addAvailableStone: (stone: string) => void;
+}
 
-export const PlayFieldSetFieldAtPosContext =
-  React.createContext<PlayFieldSetFieldAtPosFunction | null>(null);
+export const GameStateContext = createContext<GameSate | null>(null);
 
-export const usePlayFieldSetFieldAtPos = () => {
-  return useContext(PlayFieldSetFieldAtPosContext);
-};
+export function useGameStateContext() {
+  return useContext(GameStateContext);
+}
 
-// ### Add to Available Stones
+export function useGameState(): GameSate {
+  const [playField, setPlayField] = useState(initialPlayField);
+  const [availableStones, setAvailableStones] = useState<string[]>([]);
 
-type AddAvailableStoneFunction = (stone: string) => void;
+  const playFieldSetFieldAtPos = useCallback(
+    (rowNumber: number, colNumber: number, letter: string) => {
+      setPlayField((prevPlayfield) =>
+        prevPlayfield.map((rowObject, rowIndex) => {
+          if (rowIndex === rowNumber) {
+            return rowObject.map((colObject, colIndex) => {
+              if (colIndex === colNumber) {
+                return {
+                  ...colObject,
+                  letter: {
+                    letter: letter,
+                    value: letterValues[letter],
+                  },
+                };
+              } else {
+                return { ...colObject };
+              }
+            });
+          } else {
+            return [...rowObject];
+          }
+        }),
+      );
+    },
+    [setPlayField],
+  );
 
-export const AddAvailableStoneContext =
-  React.createContext<AddAvailableStoneFunction | null>(null);
+  const addAvailableStone = useCallback(
+    (stone: string) => {
+      setAvailableStones((prevStones) => [...prevStones, stone]);
+    },
+    [setAvailableStones],
+  );
 
-export const useAddAvailableStone = () => {
-  return useContext(AddAvailableStoneContext);
-};
+  return {
+    playField,
+    availableStones,
+    playFieldSetFieldAtPos,
+    addAvailableStone,
+  };
+}

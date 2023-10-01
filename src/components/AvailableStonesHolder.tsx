@@ -1,6 +1,6 @@
 import StoneChooserPopup from "./StoneChooserPopup";
 import { useState } from "react";
-import { useAddAvailableStone } from "../types/Game";
+import { useGameStateContext } from "../types/Game";
 import { letterValues } from "../types/letter";
 import AvailableLetterStone from "./letterStones/AvailableLetterStone";
 
@@ -13,7 +13,7 @@ export default function AvailableStonesHolder({ availableStones }: Props) {
     useState<HTMLDivElement | null>(null);
   const [showPopup, setShowPopup] = useState(false);
 
-  const addAvailableStone = useAddAvailableStone();
+  const gameStateContext = useGameStateContext();
 
   return (
     <>
@@ -40,7 +40,7 @@ export default function AvailableStonesHolder({ availableStones }: Props) {
           referenceElement={referenceElement}
           onClose={() => setShowPopup(false)}
           onChoseStone={(stone) => {
-            addAvailableStone?.(stone);
+            gameStateContext?.addAvailableStone?.(stone);
           }}
         />
       )}
