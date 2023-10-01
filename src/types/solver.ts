@@ -57,6 +57,9 @@ export async function findBestWord(
 
   allPlacementOptions.sort((a, b) => b.points - a.points);
   console.log(allPlacementOptions);
+  /**
+   * TODO: Joker stone ("*") not currently used
+   */
 }
 
 export interface ConnectingWord {

@@ -1,8 +1,8 @@
 import StoneChooserPopup from "./StoneChooserPopup";
 import { useState } from "react";
 import { useAddAvailableStone } from "../types/Game";
-import LetterStone from "./LetterStone";
 import { letterValues } from "../types/letter";
+import AvailableLetterStone from "./letterStones/AvailableLetterStone";
 
 interface Props {
   availableStones: string[];
@@ -19,7 +19,7 @@ export default function AvailableStonesHolder({ availableStones }: Props) {
     <>
       <div className="fixed bottom-1 left-1/2 -translate-x-1/2 bg-black bg-opacity-60 rounded px-2 py-1 flex justify-center min-w-[200px]">
         {availableStones.map((stone, index) => (
-          <LetterStone
+          <AvailableLetterStone
             key={`${stone}-${index}`}
             letterInfo={{
               letter: stone,

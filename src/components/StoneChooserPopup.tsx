@@ -1,5 +1,5 @@
 import { letterValues } from "../types/letter";
-import LetterStone from "./LetterStone";
+import LetterStone from "./letterStones/LetterStone";
 import useComponentVisible from "../hooks/clickOutsideHook";
 import { useState } from "react";
 import { usePopper } from "react-popper";
