@@ -3,6 +3,11 @@ export interface LetterInfo {
   value: number;
 }
 
+export interface StonePrePlacement {
+  id: string;
+  letterInfo: LetterInfo;
+}
+
 export const letterValues: { [key: string]: number } = {
   A: 1,
   B: 3,

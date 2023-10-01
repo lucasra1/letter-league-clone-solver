@@ -1,4 +1,4 @@
-import { LetterInfo } from "./letter";
+import { LetterInfo, StonePrePlacement } from "./letter";
 import { Modifier } from "./modifier";
 import { PlayfieldCoordinate } from "./common";
 
@@ -6,6 +6,7 @@ export interface FieldInfo {
   letter: LetterInfo | undefined;
   modifier: Modifier | undefined;
   location: PlayfieldCoordinate;
+  stonePrePlacement: StonePrePlacement | undefined;
 }
 
 export function getFieldInfoOrUndefined(

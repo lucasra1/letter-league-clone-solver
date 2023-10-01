@@ -21,6 +21,7 @@ export default function AvailableStonesHolder({ availableStones }: Props) {
         {availableStones.map((stone, index) => (
           <AvailableLetterStone
             key={`${stone}-${index}`}
+            indexInHolder={index}
             letterInfo={{
               letter: stone,
               value: letterValues[stone],
