@@ -16,8 +16,24 @@ export default function AvailableStonesHolder({ availableStones }: Props) {
   const gameStateContext = useGameStateContext();
 
   return (
-    <>
-      <div className="fixed bottom-1 left-1/2 -translate-x-1/2 bg-black bg-opacity-60 rounded px-2 py-1 flex justify-center min-w-[200px]">
+    <div className="flex flex-col gap-2 fixed bottom-1 left-1/2 -translate-x-1/2">
+      <div className="flex justify-center gap-4">
+        <button
+          className="rounded bg-green-500 py-1 px-3 text-xl text-white shadow disabled:bg-gray-700 disabled:bg-opacity-70"
+          disabled={!gameStateContext?.canPrePlacementBePlaced}
+        >
+          Place
+        </button>
+        <button
+          className="rounded bg-green-500 py-1 px-3 text-xl text-white shadow"
+          onClick={() => {
+            gameStateContext?.revokeStones();
+          }}
+        >
+          Revoke Stones
+        </button>
+      </div>
+      <div className="bg-black bg-opacity-60 rounded px-2 py-1 flex justify-center min-w-[200px]">
         {availableStones.map((stone, index) => (
           <AvailableLetterStone
             key={`${stone}-${index}`}
@@ -45,6 +61,6 @@ export default function AvailableStonesHolder({ availableStones }: Props) {
           }}
         />
       )}
-    </>
+    </div>
   );
 }

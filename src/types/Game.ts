@@ -8,6 +8,7 @@ import { v4 as uuid4v } from "uuid";
 interface GameSate {
   playField: FieldInfo[][];
   availableStones: string[];
+  canPrePlacementBePlaced: boolean;
   playFieldSetFieldAtPos: (
     rowNumber: number,
     colNumber: number,
@@ -17,9 +18,11 @@ interface GameSate {
   removeAvailableStone: (index: number) => void;
   placeStonePrePlacement: (
     stone: LetterInfo,
+    isAvailableStone: boolean,
     location: PlayfieldCoordinate,
     existingId?: string,
   ) => void;
+  revokeStones: () => void;
 }
 
 export const GameStateContext = createContext<GameSate | null>(null);
@@ -31,6 +34,7 @@ export function useGameStateContext() {
 export function useGameState(): GameSate {
   const [playField, setPlayField] = useState(initialPlayField);
   const [availableStones, setAvailableStones] = useState<string[]>([]);
+  const [canPrePlacementBePlaced, setCanPrePlacementBePlaced] = useState(false);
 
   const playFieldSetFieldAtPos = useCallback(
     (row: number, col: number, letter: string) => {
@@ -57,9 +61,7 @@ export function useGameState(): GameSate {
     (index: number) => {
       setAvailableStones((prevStones) => {
         const newArray = [...prevStones];
-        if (index) {
-          newArray.splice(index, 1);
-        }
+        newArray.splice(index, 1);
         return newArray;
       });
     },
@@ -67,7 +69,12 @@ export function useGameState(): GameSate {
   );
 
   const placeStonePrePlacement = useCallback(
-    (stone: LetterInfo, location: PlayfieldCoordinate, existingId?: string) => {
+    (
+      stone: LetterInfo,
+      isAvailableStone: boolean,
+      location: PlayfieldCoordinate,
+      existingId?: string,
+    ) => {
       if (existingId) {
         let stonePrePlacement: StonePrePlacement | undefined = undefined;
         setPlayField((prevState) =>
@@ -101,22 +108,49 @@ export function useGameState(): GameSate {
               stonePrePlacement: {
                 id: uuid4v(),
                 letterInfo: stone,
+                isAvailableStone,
               },
             }),
           ),
         );
       }
     },
-    [],
+    [setPlayField],
   );
+
+  const revokeStones = useCallback(() => {
+    const addToAvailableStones: string[] = [...availableStones];
+    setPlayField(
+      playField.map((rowObject) =>
+        rowObject.map((colObject) => {
+          if (colObject.stonePrePlacement !== undefined) {
+            if (colObject.stonePrePlacement.isAvailableStone) {
+              addToAvailableStones.push(
+                colObject.stonePrePlacement.letterInfo.letter,
+              );
+            }
+            return {
+              ...colObject,
+              stonePrePlacement: undefined,
+            };
+          } else {
+            return colObject;
+          }
+        }),
+      ),
+    );
+    setAvailableStones(addToAvailableStones);
+  }, [playField, availableStones]);
 
   return {
     playField,
     availableStones,
+    canPrePlacementBePlaced,
     playFieldSetFieldAtPos,
     addAvailableStone,
     removeAvailableStone,
     placeStonePrePlacement,
+    revokeStones,
   };
 }
 

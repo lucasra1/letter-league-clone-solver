@@ -15,12 +15,12 @@ export function GameField({ fieldInfo }: Props) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: DndItemTypes.AVAILABLE_STONE,
     drop: (item: DndAvailableStoneType, monitor) => {
-      console.log(item);
       if (item.indexInHolder !== undefined) {
         gameState?.removeAvailableStone(item.indexInHolder);
       }
       gameState?.placeStonePrePlacement(
         item.letterInfo,
+        true,
         fieldInfo.location,
         item.id,
       );

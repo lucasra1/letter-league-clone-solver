@@ -5,6 +5,7 @@ export interface LetterInfo {
 
 export interface StonePrePlacement {
   id: string;
+  isAvailableStone: boolean;
   letterInfo: LetterInfo;
 }
 
