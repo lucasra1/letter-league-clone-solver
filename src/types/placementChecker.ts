@@ -2,7 +2,7 @@ import { ConnectingWord, englishWordsArray } from "./solver";
 import { Direction, PlayfieldCoordinate } from "./common";
 import { FieldInfo, getFieldInfoOrUndefined } from "./gameField";
 import { Modifier } from "./modifier";
-import { letterValues } from "./letter";
+import { LetterInfo, letterValues } from "./letter";
 
 export interface PlacementOption {
   word: string;
@@ -38,6 +38,12 @@ interface SideEffectPlacementResolution {
 enum Level {
   HORIZONTAL,
   VERTICAL,
+}
+
+enum FieldFindingCondition {
+  LETTERS,
+  PRE_PLACEMENT_LETTERS,
+  LETTERS_AND_PRE_PLACEMENT_LETTERS,
 }
 
 export async function getPlacementOptions(
@@ -426,24 +432,28 @@ function sideEffectWordResolution(
   if (level === Level.HORIZONTAL) {
     precedingFields = getFieldInDirectionRecursively(
       playfield,
-      location,
+      { row: location.row, col: location.col - 1 },
       Direction.LEFT,
+      FieldFindingCondition.LETTERS,
     );
     succeedingFields = getFieldInDirectionRecursively(
       playfield,
-      location,
+      { row: location.row, col: location.col + 1 },
       Direction.RIGHT,
+      FieldFindingCondition.LETTERS,
     );
   } else {
     precedingFields = getFieldInDirectionRecursively(
       playfield,
-      location,
+      { row: location.row - 1, col: location.col },
       Direction.UP,
+      FieldFindingCondition.LETTERS,
     );
     succeedingFields = getFieldInDirectionRecursively(
       playfield,
-      location,
+      { row: location.row + 1, col: location.col },
       Direction.DOWN,
+      FieldFindingCondition.LETTERS,
     );
   }
 
@@ -478,49 +488,278 @@ function getFieldInDirectionRecursively(
   playfield: FieldInfo[][],
   location: PlayfieldCoordinate,
   direction: Direction,
+  fieldFindingCondition: FieldFindingCondition,
 ): FieldInfo[] {
-  let nextField: FieldInfo | undefined = undefined;
-  switch (direction) {
-    case Direction.UP:
-      nextField = getFieldInfoOrUndefined(
-        playfield,
-        location.row - 1,
-        location.col,
-      );
-      break;
-    case Direction.DOWN:
-      nextField = getFieldInfoOrUndefined(
-        playfield,
-        location.row + 1,
-        location.col,
-      );
-      break;
-    case Direction.LEFT:
-      nextField = getFieldInfoOrUndefined(
-        playfield,
-        location.row,
-        location.col - 1,
-      );
-      break;
-    case Direction.RIGHT:
-      nextField = getFieldInfoOrUndefined(
-        playfield,
-        location.row,
-        location.col + 1,
-      );
-      break;
-  }
+  const field = getFieldInfoOrUndefined(playfield, location.row, location.col);
 
-  if (!nextField) {
+  if (!field) {
     return [];
   }
 
+  switch (fieldFindingCondition) {
+    case FieldFindingCondition.LETTERS:
+      if (field.letter === undefined) {
+        return [];
+      }
+      break;
+    case FieldFindingCondition.PRE_PLACEMENT_LETTERS:
+      if (field.stonePrePlacement === undefined) {
+        return [];
+      }
+      break;
+    case FieldFindingCondition.LETTERS_AND_PRE_PLACEMENT_LETTERS:
+      if (field.letter === undefined && field.stonePrePlacement === undefined) {
+        return [];
+      }
+      break;
+  }
+
+  let newLocation: PlayfieldCoordinate | undefined = undefined;
+  switch (direction) {
+    case Direction.UP:
+      newLocation = {
+        row: location.row - 1,
+        col: location.col,
+      };
+      break;
+    case Direction.DOWN:
+      newLocation = {
+        row: location.row + 1,
+        col: location.col,
+      };
+      break;
+    case Direction.LEFT:
+      newLocation = {
+        row: location.row,
+        col: location.col - 1,
+      };
+      break;
+    case Direction.RIGHT:
+      newLocation = {
+        row: location.row,
+        col: location.col + 1,
+      };
+      break;
+  }
+
   return [
-    nextField,
-    ...getFieldInDirectionRecursively(playfield, nextField.location, direction),
+    field,
+    ...getFieldInDirectionRecursively(
+      playfield,
+      newLocation,
+      direction,
+      fieldFindingCondition,
+    ),
   ];
 }
 
 function doesEnglishWordExist(englishWord: string): boolean {
   return englishWordsArray.includes(englishWord);
+}
+
+function getLetterInfoFromField(
+  field: FieldInfo,
+  fieldFindingCondition: FieldFindingCondition,
+): LetterInfo | undefined {
+  switch (fieldFindingCondition) {
+    case FieldFindingCondition.LETTERS:
+      return field.letter;
+    case FieldFindingCondition.PRE_PLACEMENT_LETTERS:
+      return field.stonePrePlacement?.letterInfo;
+    case FieldFindingCondition.LETTERS_AND_PRE_PLACEMENT_LETTERS:
+      return field.letter || field.stonePrePlacement?.letterInfo;
+  }
+}
+
+function getLetterInfoFromPlayfield(
+  playField: FieldInfo[][],
+  location: PlayfieldCoordinate,
+  fieldFindingCondition: FieldFindingCondition,
+): LetterInfo | undefined {
+  const field = getFieldInfoOrUndefined(playField, location.row, location.col);
+  if (!field) {
+    return undefined;
+  }
+  return getLetterInfoFromField(field, fieldFindingCondition);
+}
+
+export function checkIfPrePlacementCanBePlacedOnPlayfield(
+  playfield: FieldInfo[][],
+): number | undefined {
+  if (!arePrePlacementAllConnected(playfield)) {
+    return undefined;
+  }
+
+  if (!areAllWordsOnBoardEnglishWords(playfield)) {
+    return undefined;
+  }
+  // TODO check points for placement
+  return 0;
+}
+
+function areAllWordsOnBoardEnglishWords(playfield: FieldInfo[][]): boolean {
+  for (let rowIndex = 0; rowIndex < playfield.length; rowIndex++) {
+    for (let colIndex = 0; colIndex < playfield[rowIndex].length; colIndex++) {
+      const letter = getLetterInfoFromPlayfield(
+        playfield,
+        {
+          row: rowIndex,
+          col: colIndex,
+        },
+        FieldFindingCondition.LETTERS_AND_PRE_PLACEMENT_LETTERS,
+      );
+      if (letter !== undefined) {
+        const leftLetter = getLetterInfoFromPlayfield(
+          playfield,
+          { row: rowIndex, col: colIndex - 1 },
+          FieldFindingCondition.LETTERS_AND_PRE_PLACEMENT_LETTERS,
+        );
+        const rightLetter = getLetterInfoFromPlayfield(
+          playfield,
+          { row: rowIndex, col: colIndex + 1 },
+          FieldFindingCondition.LETTERS_AND_PRE_PLACEMENT_LETTERS,
+        );
+        const topLetter = getLetterInfoFromPlayfield(
+          playfield,
+          { row: rowIndex - 1, col: colIndex },
+          FieldFindingCondition.LETTERS_AND_PRE_PLACEMENT_LETTERS,
+        );
+        const bottomLetter = getLetterInfoFromPlayfield(
+          playfield,
+          { row: rowIndex + 1, col: colIndex },
+          FieldFindingCondition.LETTERS_AND_PRE_PLACEMENT_LETTERS,
+        );
+        let allFieldsForWord: FieldInfo[] = [];
+        if (leftLetter === undefined && rightLetter !== undefined) {
+          allFieldsForWord = getFieldInDirectionRecursively(
+            playfield,
+            { row: rowIndex, col: colIndex },
+            Direction.RIGHT,
+            FieldFindingCondition.LETTERS_AND_PRE_PLACEMENT_LETTERS,
+          );
+        } else if (topLetter === undefined && bottomLetter !== undefined) {
+          allFieldsForWord = getFieldInDirectionRecursively(
+            playfield,
+            { row: rowIndex, col: colIndex },
+            Direction.DOWN,
+            FieldFindingCondition.LETTERS_AND_PRE_PLACEMENT_LETTERS,
+          );
+        } else {
+          continue;
+        }
+        const potentialEnglishWord = allFieldsForWord
+          .map(
+            (field) =>
+              getLetterInfoFromField(
+                field,
+                FieldFindingCondition.LETTERS_AND_PRE_PLACEMENT_LETTERS,
+              )?.letter,
+          )
+          .join("");
+        if (!doesEnglishWordExist(potentialEnglishWord)) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+function arePrePlacementAllConnected(playfield: FieldInfo[][]): boolean {
+  const fieldInfoOfAllPrePlacements: FieldInfo[] = [];
+  playfield.forEach((rowObject) => {
+    rowObject.forEach((colObject) => {
+      if (colObject.stonePrePlacement !== undefined) {
+        fieldInfoOfAllPrePlacements.push(colObject);
+      }
+    });
+  });
+
+  if (fieldInfoOfAllPrePlacements.length === 0) {
+    return true;
+  }
+
+  let startingLocation = fieldInfoOfAllPrePlacements[0].location;
+  let endingLocation = fieldInfoOfAllPrePlacements[0].location;
+  fieldInfoOfAllPrePlacements.splice(0, 1);
+
+  let remainingStones = fieldInfoOfAllPrePlacements.length;
+
+  while (remainingStones > 0) {
+    let foundStone = false;
+    for (let i = 0; i < fieldInfoOfAllPrePlacements.length; i++) {
+      const locationOfField = fieldInfoOfAllPrePlacements[i].location;
+      if (
+        !isLocationInLine(startingLocation, endingLocation, locationOfField)
+      ) {
+        return false;
+      }
+      if (isLocationNextTo(startingLocation, locationOfField)) {
+        startingLocation = locationOfField;
+        fieldInfoOfAllPrePlacements.splice(i, 1);
+        remainingStones -= 1;
+        foundStone = true;
+      } else if (isLocationNextTo(endingLocation, locationOfField)) {
+        endingLocation = locationOfField;
+        fieldInfoOfAllPrePlacements.splice(i, 1);
+        remainingStones -= 1;
+        foundStone = true;
+      }
+    }
+    if (!foundStone) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isLocationNextTo(
+  locationA: PlayfieldCoordinate,
+  locationB: PlayfieldCoordinate,
+): boolean {
+  if (
+    locationA.row === locationB.row &&
+    Math.abs(locationA.col - locationB.col) === 1
+  ) {
+    return true;
+  } else if (
+    locationA.col === locationB.col &&
+    Math.abs(locationA.row - locationB.row) === 1
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Check if new location is in line. Does not check if next to
+ *
+ * @param startLocation
+ * @param endLocation
+ * @param newLocation
+ */
+function isLocationInLine(
+  startLocation: PlayfieldCoordinate,
+  endLocation: PlayfieldCoordinate,
+  newLocation: PlayfieldCoordinate,
+): boolean {
+  if (
+    startLocation.row === endLocation.row &&
+    startLocation.col === endLocation.col
+  ) {
+    return (
+      newLocation.row === startLocation.row ||
+      newLocation.col === startLocation.col
+    );
+  }
+  if (startLocation.row === endLocation.row) {
+    // Horizontal
+    return newLocation.row === startLocation.row;
+  } else if (startLocation.col === endLocation.col) {
+    // Vertical
+    return newLocation.col === startLocation.col;
+  } else {
+    return false;
+  }
 }

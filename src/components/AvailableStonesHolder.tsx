@@ -20,7 +20,7 @@ export default function AvailableStonesHolder({ availableStones }: Props) {
       <div className="flex justify-center gap-4">
         <button
           className="rounded bg-green-500 py-1 px-3 text-xl text-white shadow disabled:bg-gray-700 disabled:bg-opacity-70"
-          disabled={!gameStateContext?.canPrePlacementBePlaced}
+          disabled={gameStateContext?.prePlacementPotentialPoints === undefined}
         >
           Place
         </button>

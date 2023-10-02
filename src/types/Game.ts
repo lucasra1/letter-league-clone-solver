@@ -1,14 +1,21 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { FieldInfo } from "./gameField";
 import { initialPlayField } from "./playfield";
 import { LetterInfo, letterValues, StonePrePlacement } from "./letter";
 import { PlayfieldCoordinate } from "./common";
 import { v4 as uuid4v } from "uuid";
+import { checkIfPrePlacementCanBePlacedOnPlayfield } from "./placementChecker";
 
 interface GameSate {
   playField: FieldInfo[][];
   availableStones: string[];
-  canPrePlacementBePlaced: boolean;
+  prePlacementPotentialPoints: number | undefined;
   playFieldSetFieldAtPos: (
     rowNumber: number,
     colNumber: number,
@@ -34,7 +41,14 @@ export function useGameStateContext() {
 export function useGameState(): GameSate {
   const [playField, setPlayField] = useState(initialPlayField);
   const [availableStones, setAvailableStones] = useState<string[]>([]);
-  const [canPrePlacementBePlaced, setCanPrePlacementBePlaced] = useState(false);
+  const [prePlacementPotentialPoints, setPrePlacementPotentialPoints] =
+    useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    setPrePlacementPotentialPoints(
+      checkIfPrePlacementCanBePlacedOnPlayfield(playField),
+    );
+  }, [playField]);
 
   const playFieldSetFieldAtPos = useCallback(
     (row: number, col: number, letter: string) => {
@@ -145,7 +159,7 @@ export function useGameState(): GameSate {
   return {
     playField,
     availableStones,
-    canPrePlacementBePlaced,
+    prePlacementPotentialPoints,
     playFieldSetFieldAtPos,
     addAvailableStone,
     removeAvailableStone,

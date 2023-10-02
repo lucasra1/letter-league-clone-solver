@@ -12,23 +12,32 @@ interface Props {
 
 export function GameField({ fieldInfo }: Props) {
   const gameState = useGameStateContext();
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: DndItemTypes.AVAILABLE_STONE,
-    drop: (item: DndAvailableStoneType, monitor) => {
-      if (item.indexInHolder !== undefined) {
-        gameState?.removeAvailableStone(item.indexInHolder);
-      }
-      gameState?.placeStonePrePlacement(
-        item.letterInfo,
-        true,
-        fieldInfo.location,
-        item.id,
-      );
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
+  const [{ isOver }, drop] = useDrop(
+    () => ({
+      accept: DndItemTypes.AVAILABLE_STONE,
+      drop: (item: DndAvailableStoneType, monitor) => {
+        if (item.indexInHolder !== undefined) {
+          gameState?.removeAvailableStone(item.indexInHolder);
+        }
+        gameState?.placeStonePrePlacement(
+          item.letterInfo,
+          true,
+          fieldInfo.location,
+          item.id,
+        );
+      },
+      canDrop: (): boolean => {
+        return (
+          fieldInfo.letter === undefined &&
+          fieldInfo.stonePrePlacement === undefined
+        );
+      },
+      collect: (monitor) => ({
+        isOver: monitor.isOver(),
+      }),
     }),
-  }));
+    [fieldInfo],
+  );
 
   return (
     <>

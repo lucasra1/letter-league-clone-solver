@@ -25,5 +25,19 @@ export const initialPlayField: FieldInfo[][] = (() => {
       modifier.modifier;
   }
 
+  // TODO remove
+  playfield[12][13].letter = {
+    letter: "A",
+    value: 1,
+  };
+  playfield[12][14].letter = {
+    letter: "B",
+    value: 3,
+  };
+  playfield[13][14].letter = {
+    letter: "D",
+    value: 2,
+  };
+
   return playfield;
 })();
