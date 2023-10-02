@@ -29,6 +29,7 @@ interface GameSate {
     location: PlayfieldCoordinate,
     existingId?: string,
   ) => void;
+  removeStonePrePlacement: (id: string) => void;
   revokeStones: () => void;
 }
 
@@ -132,6 +133,26 @@ export function useGameState(): GameSate {
     [setPlayField],
   );
 
+  const removeStonePrePlacement = useCallback(
+    (id: string) => {
+      setPlayField((prevState) =>
+        prevState.map((rowObject) =>
+          rowObject.map((colObject) => {
+            if (id && colObject.stonePrePlacement?.id === id) {
+              return {
+                ...colObject,
+                stonePrePlacement: undefined,
+              };
+            } else {
+              return colObject;
+            }
+          }),
+        ),
+      );
+    },
+    [setPlayField],
+  );
+
   const revokeStones = useCallback(() => {
     const addToAvailableStones: string[] = [...availableStones];
     setPlayField(
@@ -164,6 +185,7 @@ export function useGameState(): GameSate {
     addAvailableStone,
     removeAvailableStone,
     placeStonePrePlacement,
+    removeStonePrePlacement,
     revokeStones,
   };
 }
